@@ -1,0 +1,19 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: pachd
+    suite: pachyderm
+  name: pachd-amb
+  namespace: default
+spec:
+  ports:
+  - name: api-grpc-port
+    port: 650
+    protocol: TCP
+    targetPort: 650
+  selector:
+    app: pachd
+  sessionAffinity: None
+  type: ClusterIP

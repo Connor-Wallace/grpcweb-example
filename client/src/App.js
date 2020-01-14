@@ -1,12 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import cytoscape from 'cytoscape';
-import logo from './logo.svg';
+import dagre from 'cytoscape-dagre';
+
 import './App.css';
 import {APIPromiseClient as PPSClient} from './pps_grpc_web_pb';
 import {APIPromiseClient as PFSClient} from './pfs_grpc_web_pb';
 import {ListPipelineRequest} from './pps_pb';
 import {ListRepoRequest} from './pfs_pb';
 
+cytoscape.use(dagre);
 
 const enableDevTools = window.__GRPCWEB_DEVTOOLS__ || (() => {});
 
@@ -23,7 +25,7 @@ const listRepos = async () => {
 
     try {
       const repoResponse = await pfs.listRepo(listRepoRequest, {});
-      return repoResponse.toObject();
+      return repoResponse.toObject().repoInfoList;
     } catch (err) {
       console.log(err);
     }
@@ -34,20 +36,87 @@ const listPipelines = async () => {
 
   try {
     const pipelineResponse = await pps.listPipeline(listPipelineRequest, {});
-    return pipelineResponse.toObject();
+    return pipelineResponse.toObject().pipelineInfoList;
   } catch (err) {
     console.log(err);
   }
 };
 
-const initializeDAG = () => {
+const formatEdges = (pipeline) => {
+  if (pipeline.input.pfs) {
+    return { data: {source: pipeline.input.pfs.repo, target: pipeline.pipeline.name }}
+  }
+  if (pipeline.input.crossList.length > 0) {
+    return pipeline.input.crossList.map((input) => {
+      return { data: {source: input.pfs.repo, target: pipeline.pipeline.name }}
+    });
+  }
+}
 
+const initDag = (repos, pipelines) => {
+  const nodes = repos.map((repo) => {
+    return {
+      data: {
+        ...repo,
+        id: repo.repo.name,
+        label: repo.repo.name
+      }
+    }
+  });
+
+  const edges = pipelines.flatMap(formatEdges);
+
+  const cy = cytoscape({
+    container: document.getElementById('dag'),
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'shape': 'hexagon',
+          'background-color': '#5ba3b1',
+          'content': 'data(id)',
+          'font-size': '5%',
+          'text-valign': 'center',
+          'test-halight': 'center',
+          'text-max-wdith': 5
+        }
+      },
+
+      {
+        selector: 'edge',
+        style: {
+          'width': 2,
+          'target-arrow-shape': 'triangle',
+          'line-color': '#b0a8b3',
+          'target-arrow-color': '#b0a8b3',
+          'curve-style': 'bezier'
+          
+        }
+      }
+    ],
+    layout: {
+      name: 'dagre',
+      rankDir: 'LR',
+      edgeSep: 100
+    },
+    elements: { nodes, edges }
+  })
+
+  cy.nodes().lock();
+
+  cy.on('tap', (evt) => {
+    cy.nodes().forEach(node => node.style('background-color', '#5ba3b1'));
+    if (evt.target !== cy && evt.target.isNode()) evt.target.style('background-color', '#582f6b');
+  });
+  console.log(cy.nodes())
+  return cy;
 ;}
 
 
 const App = () => {
-  const [repos, setRepos] = useState({});
-  const [pipelines, setPipelines] = useState({});
+  const [repos, setRepos] = useState([]);
+  const [pipelines, setPipelines] = useState([]);
+  const [dag, setDag] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +126,8 @@ const App = () => {
   
         const pipelines = await listPipelines();
         setPipelines(pipelines);
+
+        setDag(initDag(repos, pipelines));
       } catch (err) {
         console.log(err);
       }
@@ -65,7 +136,6 @@ const App = () => {
     fetchData();
   }, []);
 
-  console.log(repos, pipelines)
 
   return (
     <div id="dag"></div>
