@@ -12,8 +12,8 @@ cytoscape.use(dagre);
 
 const enableDevTools = window.__GRPCWEB_DEVTOOLS__ || (() => {});
 
-const pps = new PPSClient('http://192.168.99.100:30347', null, null);
-const pfs = new PFSClient('http://192.168.99.100:30347', null, null);
+const pps = new PPSClient('http://192.168.99.101:30977', null, null);
+const pfs = new PFSClient('http://192.168.99.101:30977', null, null);
 
 enableDevTools([
   pps,
@@ -77,8 +77,8 @@ const initDag = (repos, pipelines) => {
           'content': 'data(id)',
           'font-size': '5%',
           'text-valign': 'center',
-          'test-halight': 'center',
-          'text-max-wdith': 5
+          'text-halight': 'center',
+          'text-max-width': 5
         }
       },
 
@@ -89,7 +89,7 @@ const initDag = (repos, pipelines) => {
           'target-arrow-shape': 'triangle',
           'line-color': '#b0a8b3',
           'target-arrow-color': '#b0a8b3',
-          'curve-style': 'bezier'
+          'curve-style': 'taxi'
           
         }
       }
@@ -97,7 +97,8 @@ const initDag = (repos, pipelines) => {
     layout: {
       name: 'dagre',
       rankDir: 'LR',
-      edgeSep: 100
+      edgeSep: 100, 
+      animate: 'end'
     },
     elements: { nodes, edges }
   })
@@ -108,7 +109,6 @@ const initDag = (repos, pipelines) => {
     cy.nodes().forEach(node => node.style('background-color', '#5ba3b1'));
     if (evt.target !== cy && evt.target.isNode()) evt.target.style('background-color', '#582f6b');
   });
-  console.log(cy.nodes())
   return cy;
 ;}
 

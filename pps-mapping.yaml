@@ -1,9 +1,0 @@
-apiVersion: getambassador.io/v1
-kind: Mapping
-metadata:
-  name: pach-pps
-spec:
-  prefix: /pps.API/
-  rewrite: /pps.API/
-  grpc: true
-  service: pachd-amb:650
